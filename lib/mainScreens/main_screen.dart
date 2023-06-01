@@ -1,3 +1,5 @@
+import 'package:car_pool_driver/Models/requests.dart';
+import 'package:car_pool_driver/Views/tabPages/requests.dart';
 import 'package:flutter/material.dart';
 
 import '../Views/tabPages/dashboard.dart';
@@ -29,7 +31,7 @@ class _MainScreenState extends State<MainScreen> with SingleTickerProviderStateM
     // TODO: implement initState
     super.initState();
 
-    tabController = TabController(length: 3, vsync: this);
+    tabController = TabController(length: 4, vsync: this);
   }
 
   @override
@@ -41,7 +43,9 @@ class _MainScreenState extends State<MainScreen> with SingleTickerProviderStateM
         children: const [
           Dashboard(),
           TripHistoryTabPage(),
+          MyRequests(),
           ProfileTabPage(),
+
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
@@ -55,6 +59,11 @@ class _MainScreenState extends State<MainScreen> with SingleTickerProviderStateM
           BottomNavigationBarItem(
             icon: Icon(Icons.car_rental),
             label: "Trip History",
+          ),
+
+          BottomNavigationBarItem(
+            icon: Icon(Icons.receipt),
+            label: "Trip Requests",
           ),
 
           BottomNavigationBarItem(

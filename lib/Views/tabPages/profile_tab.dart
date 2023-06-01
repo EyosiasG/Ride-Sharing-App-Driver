@@ -1,4 +1,5 @@
 import 'package:car_pool_driver/Views/tabPages/requests.dart';
+import 'package:car_pool_driver/Views/tabPages/support_tab.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
@@ -140,9 +141,12 @@ Widget settingsTile(BuildContext context) {
     Padding(
       padding: const EdgeInsets.fromLTRB(8, 1, 8, 8),
       child:  ListTile(
-        onTap: () {},
-        leading: Icon(Icons.feedback),
-        title: Text('Feedback'),
+        onTap: () {
+          Navigator.of(context).push(MaterialPageRoute(
+              builder: (context) => MyFeedback()));
+        },
+        leading: Icon(Icons.support),
+        title: Text('Support'),
       ),
     ),
     Padding(
