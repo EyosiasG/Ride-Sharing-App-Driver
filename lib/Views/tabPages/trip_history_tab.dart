@@ -55,8 +55,8 @@ class FirebaseService {
           driverId: value['driver_id'],
           date: value['date'],
           dropOff: value['drop_off'],
-          seats: value['seats'],
-          time: value['time']
+          seats: value['seats'], time: '',
+
         );
         itemList.add(item);
       });

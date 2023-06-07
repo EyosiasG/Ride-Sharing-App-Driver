@@ -153,7 +153,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         .ref('licenseImages/${firebaseUser?.uid}.jpg')
         .putFile(_driverLicenseImage!);
     final licenseImageUrl = await licenseUploadTask.ref.getDownloadURL();
-
+    List<double> list = List.generate(10, (index) => 0.0 );
     if(firebaseUser != null){
       Map driverMap =
       {
@@ -170,6 +170,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         "driver_image": userImageUrl,
         "driver_libre": libreImageUrl,
         "driver_license": licenseImageUrl,
+        "ratings": list,
 
       };
 

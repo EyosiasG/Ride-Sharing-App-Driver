@@ -8,6 +8,17 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 
 class AssistantMethods {
+  static get math => null;
+
+  static double getMarkerRotation(double startLat, double startLng, double endLat, double endLng) {
+    double deltaLng = endLng - startLng;
+    double y = math.sin(deltaLng) * math.cos(endLat);
+    double x = math.cos(startLat) * math.sin(endLat) - math.sin(startLat) * math.cos(endLat) * math.cos(deltaLng);
+    double radians = math.atan2(y, x);
+    double degrees = radians * 180 / math.pi;
+    return degrees;
+  }
+  
   static Future<String> searchCoordinateAddress(
       Position position, context) async {
     String placeAddress = "";

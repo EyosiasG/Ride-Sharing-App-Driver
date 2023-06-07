@@ -87,7 +87,7 @@ class _MyFeedbackState extends State<MyFeedback> {
                 mainAxisAlignment: MainAxisAlignment.start,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  const Text(
                     'Title',
                     style: TextStyle(
                       fontSize: 18,
@@ -119,10 +119,10 @@ class _MyFeedbackState extends State<MyFeedback> {
                           borderSide: BorderSide(color: Colors.grey)),
                     ),
                   ),
-                  SizedBox(
+                  const SizedBox(
                     height: 10,
                   ),
-                  Text(
+                  const Text(
                     'Feedback',
                     style: TextStyle(
                       fontSize: 18,
@@ -152,7 +152,7 @@ class _MyFeedbackState extends State<MyFeedback> {
                       ),
                     ),
                   ),
-                  SizedBox(
+                  const SizedBox(
                     height: 15,
                   ),
                   Center(
@@ -165,7 +165,7 @@ class _MyFeedbackState extends State<MyFeedback> {
                             //Navigator.push(context, MaterialPageRoute(builder: (c)=> CarInfoScreen()));
                           },
                           style: ElevatedButton.styleFrom(
-                            primary: Colors.greenAccent,
+                            backgroundColor: Colors.greenAccent,
                             elevation: 3,
                             shape: RoundedRectangleBorder(
                                 //to set border radius to button
