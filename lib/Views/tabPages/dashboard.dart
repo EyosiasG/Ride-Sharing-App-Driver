@@ -12,6 +12,7 @@ import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:fluttericon/entypo_icons.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../Constants/widgets/toast.dart';
 import '../assistants/assistant_methods.dart';
@@ -52,6 +53,8 @@ class _DashboardState extends State<Dashboard> {
   TextEditingController destinationLatitudeController = TextEditingController();
   TextEditingController destinationLongitudeController =
       TextEditingController();
+  TextEditingController dateController = TextEditingController();
+  TextEditingController timeController = TextEditingController();
 
   late String passengers;
   final _formKey = GlobalKey<FormState>();
@@ -84,10 +87,14 @@ class _DashboardState extends State<Dashboard> {
   Widget build(BuildContext context) {
     String? pickUpLocation =
         Provider.of<AppData>(context).pickUpLocation?.placeName;
-    pickUpLocationController.text = (pickUpLocation.toString() == 'null') ? 'Retreiving Location...' : pickUpLocation.toString();
+    pickUpLocationController.text = (pickUpLocation.toString() == 'null')
+        ? 'Retreiving Location...'
+        : pickUpLocation.toString();
     String? destination =
         Provider.of<AppData>(context).dropOffLocation?.placeName;
-    destinationLocationController.text = (destination.toString() == 'null') ? 'Enter Destination' : destination.toString();
+    destinationLocationController.text = (destination.toString() == 'null')
+        ? 'Enter Destination'
+        : destination.toString();
     double? locationLatitude =
         Provider.of<AppData>(context).pickUpLocation?.latitude;
     latitudeController.text = locationLatitude.toString();
@@ -138,8 +145,8 @@ class _DashboardState extends State<Dashboard> {
                       topRight: Radius.circular(18.0)),
                   boxShadow: [
                     BoxShadow(
-                        color: Colors.greenAccent,
-                        blurRadius: 10.0,
+                      color: Colors.greenAccent,
+                      blurRadius: 10.0,
                     ),
                   ],
                 ),
@@ -215,17 +222,19 @@ class _DashboardState extends State<Dashboard> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 10,),
+                      const SizedBox(
+                        height: 10,
+                      ),
                       SizedBox(
                         height: 50,
-                        width:300,
+                        width: 300,
                         child: ElevatedButton(
                             style: ElevatedButton.styleFrom(
                               primary: Colors.greenAccent,
                               elevation: 3,
-                              shape: RoundedRectangleBorder( //to set border radius to button
-                                  borderRadius: BorderRadius.circular(10)
-                              ),
+                              shape: RoundedRectangleBorder(
+                                  //to set border radius to button
+                                  borderRadius: BorderRadius.circular(10)),
                             ),
                             onPressed: () {
                               _saveToFirebase(context);
@@ -336,6 +345,49 @@ class _DashboardState extends State<Dashboard> {
                         this.price = value;
                       },
                     ),
+                    TextFormField(
+                        controller: timeController,
+                        decoration: const InputDecoration(
+                            border: OutlineInputBorder(),
+                            labelText: 'Time',
+                            icon: Icon(Icons.alarm)),
+                        onTap: () async {
+                          DateTime? pickedDate = await showDatePicker(
+                            context: context,
+                            initialDate: DateTime.now(),
+                            firstDate: DateTime.now(),
+                            lastDate: DateTime(2200),
+                          );
+
+                          if (pickedDate != null) {
+                            setState(() {
+                              dateController.text = DateFormat('yyyy-MM-dd').format(pickedDate);
+                            });
+                          }
+                        }),
+
+                    TextFormField(
+                        controller: dateController,
+                        decoration: const InputDecoration(
+                            border: OutlineInputBorder(),
+                            labelText: 'Date',
+                            icon: Icon(Icons.calendar_month_rounded)
+                        ),
+                        onTap: () async {
+                          TimeOfDay? pickedTime = await showTimePicker(
+                            context: context,
+                            initialTime: TimeOfDay.now(),
+                          );
+                          if(pickedTime!= null){
+                            setState(() {
+                              final localizations = MaterialLocalizations.of(context);
+                              final formattedTimeOfDay = localizations.formatTimeOfDay(pickedTime);
+                              timeController.text =formattedTimeOfDay;
+                            });
+                          }
+                        }
+
+                    )
                   ],
                 ),
               ),
@@ -504,6 +556,10 @@ class _DashboardState extends State<Dashboard> {
           "passengers": passengers,
           "driver_id": _auth.currentUser?.uid.toString(),
           "passengerIDs": list,
+          "date": dateController.text.toString(),
+          "time": timeController.text.toString(),
+          "availableSeats": passengers[0],
+          "status": "scheduled"
         });
         Navigator.pop(context);
         // ignore: use_build_context_synchronously

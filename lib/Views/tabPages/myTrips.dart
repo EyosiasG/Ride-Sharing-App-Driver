@@ -21,7 +21,10 @@ class _MyTripsState extends State<MyTrips> {
     List<Trip> itemList = [];
 
     try {
-      final dataSnapshot = await databaseReference.once();
+      final dataSnapshot = await databaseReference
+          .orderByChild('driver_id')
+          .equalTo(currentFirebaseUser!.uid)
+          .once();
 
       Map<dynamic, dynamic> values =
           dataSnapshot.snapshot.value as Map<dynamic, dynamic>;
