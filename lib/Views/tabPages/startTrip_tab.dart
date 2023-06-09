@@ -8,10 +8,19 @@ import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'dart:ui' as ui;
 
+import '../../Models/trip.dart';
+import '../../widgets/progress_dialog.dart';
+
 
 class MyWidget extends StatefulWidget {
+  final Trip trip;
   @override
   _MyWidgetState createState() => _MyWidgetState();
+
+  const MyWidget({
+    Key? key,
+    required this.trip
+});
 }
 
 class _MyWidgetState extends State<MyWidget> {
@@ -40,7 +49,15 @@ class _MyWidgetState extends State<MyWidget> {
         _lastPosition!.latitude, _lastPosition!.longitude);
     PointLatLng destinationLatLng = PointLatLng(
         _destination!.latitude, _destination!.longitude);
-
+    Future.delayed(Duration.zero, () {
+      showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (BuildContext c){
+            return ProgressDialog(message: "Processing, Please wait...",);
+          }
+      );
+    });
     PolylineResult result = await polylinePoints.getRouteBetweenCoordinates(
       'AIzaSyDvCw3bdrvlUbjoSsW8BHYqyWNxxhTuIiY',
       startLatLng,
@@ -61,12 +78,12 @@ class _MyWidgetState extends State<MyWidget> {
         points: polylineCoordinates,
       ));
     });
+    Navigator.pop(context);
   }
 
   @override
   void initState() {
     super.initState();
-    _tripNameController = TextEditingController();
     _getCurrentLocation().then((Position? position) {
       if (position != null) {
         _currentPosition = position;
@@ -75,8 +92,8 @@ class _MyWidgetState extends State<MyWidget> {
 
         _lastPosition = position;
         _destination = Position(
-            latitude: 9.0299865,
-            longitude: 38.76203239999999,
+            latitude: double.parse(widget.trip.dropOffLatPos),
+            longitude: double.parse(widget.trip.dropOffLongPos),
             altitude: 0,
             accuracy: 0,
             heading: 0,
@@ -168,7 +185,7 @@ class _MyWidgetState extends State<MyWidget> {
         );
         print("distance: $distance");
 
-        if (distance < 10) {
+        if (distance < 100) {
           timer.cancel();
           return;
         }
@@ -185,11 +202,10 @@ class _MyWidgetState extends State<MyWidget> {
           distanceToTravel = distance;
         }
         double lat = lastPositionLatLng.latitude +
-            (distanceToTravel * sin(bearing * pi / 180.0)) /
-                (111320 * cos(lastPositionLatLng.latitude * pi / 180.0));
+            (distanceToTravel / 111320) * cos(bearing * pi / 180.0);
         double lng = lastPositionLatLng.longitude +
-            (distanceToTravel * cos(bearing * pi / 180.0)) /
-                (111320 * cos(lastPositionLatLng.latitude * pi / 180.0));
+            (distanceToTravel / (111320 * cos(lastPositionLatLng.latitude * pi / 180.0))) *
+                sin(bearing * pi / 180.0);
         setState(() {
           LatLng newPositionLatLng = LatLng(lat, lng);
           _trackingActive = true;
@@ -219,6 +235,7 @@ class _MyWidgetState extends State<MyWidget> {
             print("New distance: $newDistance");
             _totalDistance += newDistance;
             print("Total distance: $_totalDistance");
+            print("Last Position: $_lastPosition");
             int totalTimeInMinutes = DateTime
                 .now()
                 .difference(_startTime!)
@@ -250,7 +267,7 @@ class _MyWidgetState extends State<MyWidget> {
       markerId: MarkerId('user'),
       position: position,
       icon: customIcon,
-      rotation: rotation * -1,
+      rotation: rotation,
     );
 
     setState(() {
