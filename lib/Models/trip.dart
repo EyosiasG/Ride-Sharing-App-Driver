@@ -15,6 +15,7 @@ class Trip{
   final String time;
   final String availableSeats;
   final String passengers;
+  final String status;
 
   const Trip({
     required this.tripID,
@@ -33,5 +34,6 @@ class Trip{
     required this.time,
     required this.availableSeats,
     required this.passengers,
+    required this.status,
   });
 }

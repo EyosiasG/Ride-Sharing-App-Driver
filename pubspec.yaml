@@ -54,6 +54,8 @@ dependencies:
   flutter_polyline_points: ^1.0.0
   google_maps: ^4.0.0
   turf: ^0.0.7
+  smooth_star_rating: ^1.1.1
+  flutter_rating_bar: ^4.0.1
   jumping_dot: ^0.0.6
   intl: ^0.18.1
 

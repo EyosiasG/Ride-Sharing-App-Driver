@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:car_pool_driver/Constants/widgets/loading.dart';
 import 'package:car_pool_driver/config_map.dart';
 import 'package:car_pool_driver/main.dart';
@@ -15,6 +17,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../Constants/widgets/toast.dart';
+import '../../widgets/progress_dialog.dart';
 import '../assistants/assistant_methods.dart';
 import '../trips/search_screen.dart';
 
@@ -55,6 +58,7 @@ class _DashboardState extends State<Dashboard> {
       TextEditingController();
   TextEditingController dateController = TextEditingController();
   TextEditingController timeController = TextEditingController();
+  TextEditingController estimatedCostController = TextEditingController();
 
   late String passengers;
   final _formKey = GlobalKey<FormState>();
@@ -180,9 +184,9 @@ class _DashboardState extends State<Dashboard> {
                                         labelText: "Pick-Up",
                                         hintStyle: TextStyle(
                                           color: Colors.grey,
-                                          fontSize: 16,
+                                          fontSize: 14,
                                         )),
-                                    style: const TextStyle(fontSize: 17.0),
+                                    style: const TextStyle(fontSize: 14.0),
                                     readOnly: true,
                                   ),
                                   const SizedBox(
@@ -201,18 +205,40 @@ class _DashboardState extends State<Dashboard> {
                                         labelText: 'Drop-Off',
                                         hintStyle: TextStyle(
                                           color: Colors.grey,
-                                          fontSize: 16,
+                                          fontSize: 14,
                                         )),
-                                    style: const TextStyle(fontSize: 17.0),
+                                    style: const TextStyle(fontSize: 14.0),
                                     readOnly: true,
                                     onTap: () async {
-                                      var res = await Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                              builder: ((context) =>
-                                                  const SearchScreen())));
-                                      if (res == "obtainDirection") {
-                                        await getPlaceDirection();
+                                      if (pickUpLocationController.text
+                                          .toString() ==
+                                          'Retrieving Location...') {
+                                        showDialog(
+                                          context: context,
+                                          builder: (BuildContext context) {
+                                            return AlertDialog(
+                                              content: const Text(
+                                                  'Retrieving Location, Please wait.'),
+                                              actions: [
+                                                TextButton(
+                                                  onPressed: () {
+                                                    Navigator.of(context).pop();
+                                                  },
+                                                  child: const Text('OK'),
+                                                ),
+                                              ],
+                                            );
+                                          },
+                                        );
+                                      } else {
+                                        var res = await Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                                builder: ((context) =>
+                                                const SearchScreen())));
+                                        if (res == "obtainDirection") {
+                                          await getPlaceDirection();
+                                        }
                                       }
                                     },
                                   ),
@@ -237,7 +263,31 @@ class _DashboardState extends State<Dashboard> {
                                   borderRadius: BorderRadius.circular(10)),
                             ),
                             onPressed: () {
-                              _saveToFirebase(context);
+
+                              if (pickUpLocationController.text.toString() ==
+                                  'Retrieving Location...' ||
+                                  destinationLocationController.text
+                                      .toString() ==
+                                      'Where are you going?') {
+                                showDialog(
+                                  context: context,
+                                  builder: (BuildContext context) {
+                                    return AlertDialog(
+                                      content: const Text('Fields can not be empty!'),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () {
+                                            Navigator.of(context).pop();
+                                          },
+                                          child: const Text('OK'),
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                );
+                              } else {
+                                _saveToFirebase(context);
+                              }
                               // Navigator.of(context).push(MaterialPageRoute(
                               //    builder: (context) => AvailableDrivers()));
                             },
@@ -258,6 +308,14 @@ class _DashboardState extends State<Dashboard> {
 
   Future<void> _saveToFirebase(BuildContext context) async {
     String dropdownvalue = '1 passenger';
+
+    estimatedCostController.text = estimateCost(
+        double.parse(latitudeController.text.toString()),
+        double.parse(longitudeController.text.toString()),
+        double.parse(destinationLatitudeController.text.toString()),
+        double.parse(destinationLongitudeController.text.toString()));
+    estimatedCostController.text += ' Birr';
+
     var currentSelectedValue;
     return showDialog(
         context: context,
@@ -272,14 +330,16 @@ class _DashboardState extends State<Dashboard> {
                     TextFormField(
                       controller: pickUpLocationController,
                       enabled: false,
-                      decoration: InputDecoration(
-                        border: const OutlineInputBorder(),
-                        labelText:
-                            Provider.of<AppData>(context).pickUpLocation != null
-                                ? Provider.of<AppData>(context)
-                                    .pickUpLocation!
-                                    .placeName
-                                : 'Wait while fetching your location',
+                      decoration: const InputDecoration(
+                        enabledBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(
+                              color: Colors.greenAccent),
+                        ),
+                        focusedBorder: UnderlineInputBorder(
+                            borderSide: BorderSide(
+                                color: Colors.greenAccent)),
+                        labelText:'Pick-Up',
+                        icon: Icon(Icons.location_on_rounded),
                       ),
                     ),
                     const SizedBox(
@@ -288,15 +348,34 @@ class _DashboardState extends State<Dashboard> {
                     TextFormField(
                       controller: destinationLocationController,
                       enabled: false,
-                      decoration: InputDecoration(
-                        border: const OutlineInputBorder(),
-                        labelText:
-                            Provider.of<AppData>(context).dropOffLocation !=
-                                    null
-                                ? Provider.of<AppData>(context)
-                                    .dropOffLocation!
-                                    .placeName
-                                : 'Wait for fetch',
+                      decoration: const InputDecoration(
+                        enabledBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(
+                              color: Colors.greenAccent),
+                        ),
+                        focusedBorder: UnderlineInputBorder(
+                            borderSide: BorderSide(
+                                color: Colors.greenAccent)),
+                        labelText: 'Drop-Off',
+                        icon: Icon(Icons.location_on_outlined),
+                      ),
+                    ),
+                    const SizedBox(
+                      height: 13.0,
+                    ),
+                    TextFormField(
+                      controller: estimatedCostController,
+                      enabled: false,
+                      decoration: const InputDecoration(
+                        enabledBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(
+                              color: Colors.greenAccent),
+                        ),
+                        focusedBorder: UnderlineInputBorder(
+                            borderSide: BorderSide(
+                                color: Colors.greenAccent)),
+                        labelText: 'Estimated Cost',
+                        icon: Icon(Icons.money),
                       ),
                     ),
                     const SizedBox(
@@ -306,8 +385,16 @@ class _DashboardState extends State<Dashboard> {
                       child: DropdownButtonHideUnderline(
                         child: DropdownButtonFormField<String>(
                           decoration: const InputDecoration(
-                            border: OutlineInputBorder(),
+                            icon: Icon(Icons.person),
+                            enabledBorder: UnderlineInputBorder(
+                              borderSide: BorderSide(
+                                  color: Colors.greenAccent),
+                            ),
+                            focusedBorder: UnderlineInputBorder(
+                                borderSide: BorderSide(
+                                    color: Colors.greenAccent)),
                           ),
+
                           validator: (value) =>
                               value == null ? 'Passengers' : null,
                           value: currentSelectedValue,
@@ -336,21 +423,17 @@ class _DashboardState extends State<Dashboard> {
                       height: 13.0,
                     ),
                     TextFormField(
-                      controller: priceController,
-                      decoration: const InputDecoration(
-                        border: OutlineInputBorder(),
-                        labelText: 'Price per passenger',
-                      ),
-                      onChanged: (value) {
-                        this.price = value;
-                      },
-                    ),
-                    TextFormField(
-                        controller: timeController,
+                        readOnly: true,
+                        controller: dateController,
                         decoration: const InputDecoration(
-                            border: OutlineInputBorder(),
-                            labelText: 'Time',
-                            icon: Icon(Icons.alarm)),
+                            enabledBorder: UnderlineInputBorder(
+                              borderSide: BorderSide(color: Colors.greenAccent),
+                            ),
+                            focusedBorder: UnderlineInputBorder(
+                                borderSide:
+                                BorderSide(color: Colors.greenAccent)),
+                            labelText: 'Date',
+                            icon: Icon(Icons.calendar_month_rounded)),
                         onTap: () async {
                           DateTime? pickedDate = await showDatePicker(
                             context: context,
@@ -361,33 +444,38 @@ class _DashboardState extends State<Dashboard> {
 
                           if (pickedDate != null) {
                             setState(() {
-                              dateController.text = DateFormat('yyyy-MM-dd').format(pickedDate);
+                              dateController.text =
+                                  DateFormat('yyyy-MM-dd').format(pickedDate);
                             });
                           }
                         }),
-
                     TextFormField(
-                        controller: dateController,
+                        readOnly: true,
+                        controller: timeController,
                         decoration: const InputDecoration(
-                            border: OutlineInputBorder(),
-                            labelText: 'Date',
-                            icon: Icon(Icons.calendar_month_rounded)
-                        ),
+                            enabledBorder: UnderlineInputBorder(
+                              borderSide: BorderSide(color: Colors.greenAccent),
+                            ),
+                            focusedBorder: UnderlineInputBorder(
+                                borderSide:
+                                BorderSide(color: Colors.greenAccent)),
+                            labelText: 'Time',
+                            icon: Icon(Icons.alarm)),
                         onTap: () async {
                           TimeOfDay? pickedTime = await showTimePicker(
                             context: context,
                             initialTime: TimeOfDay.now(),
                           );
-                          if(pickedTime!= null){
+                          if (pickedTime != null) {
                             setState(() {
-                              final localizations = MaterialLocalizations.of(context);
-                              final formattedTimeOfDay = localizations.formatTimeOfDay(pickedTime);
-                              timeController.text =formattedTimeOfDay;
+                              final localizations =
+                              MaterialLocalizations.of(context);
+                              final formattedTimeOfDay =
+                              localizations.formatTimeOfDay(pickedTime);
+                              timeController.text = formattedTimeOfDay;
                             });
                           }
-                        }
-
-                    )
+                        }),
                   ],
                 ),
               ),
@@ -539,11 +627,15 @@ class _DashboardState extends State<Dashboard> {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
       try {
-        showDialog(
-            context: context,
-            builder: (BuildContext context) {
-              return LoadingScreen(message: "Adding to the pool...");
-            });
+        Future.delayed(Duration.zero, () {
+          showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (BuildContext c){
+                return ProgressDialog(message: "Processing, Please wait...",);
+              }
+          );
+        });
         await tripsRef.child(tripID).set({
           "tripID": tripID,
           "pickUpLocation": pickUpLocationController.text.toString(),
@@ -552,13 +644,13 @@ class _DashboardState extends State<Dashboard> {
           "locationLongitude": longitudeController.text,
           "destinationLatitude": destinationLatitudeController.text,
           "destinationLongitude": destinationLongitudeController.text,
-          "price": price,
           "passengers": passengers,
           "driver_id": _auth.currentUser?.uid.toString(),
           "passengerIDs": list,
           "date": dateController.text.toString(),
           "time": timeController.text.toString(),
           "availableSeats": passengers[0],
+          "estimatedCost": estimatedCostController.text.toString(),
           "status": "scheduled"
         });
         Navigator.pop(context);
@@ -571,5 +663,50 @@ class _DashboardState extends State<Dashboard> {
         displayToastMessage("Pool has not been added", context);
       }
     }
+  }
+
+  String estimateCost(double pickUpLat, double pickUpLong, double destLat, double  destLong){
+    double baseFare = 80;
+    double costPerMin = 2;
+    double costPerKm = 12;
+
+    double distance = estimateDistance(pickUpLat, pickUpLong, destLat, destLong);
+    double time = estimateTime(distance);
+
+    double cost = baseFare + (distance * costPerKm)  + (time * costPerMin);
+
+    return cost.round().toString();
+  }
+
+  double estimateDistance(double pickUpLat, double pickUpLong, double destLat, double  destLong){
+
+    double distance, earthRadius = 6371;
+    double lat1Rad = degreesToRadians(pickUpLat);
+    double lon1Rad = degreesToRadians(pickUpLong);
+    double lat2Rad = degreesToRadians(destLat);
+    double lon2Rad = degreesToRadians(destLong);
+
+    double latDiff = lat2Rad - lat1Rad;
+    double lonDiff = lon2Rad - lon1Rad;
+
+    num havLat = pow(sin(latDiff / 2), 2);
+    num havLon = pow(sin(lonDiff / 2), 2);
+
+    double hav = havLat + havLon * cos(lat1Rad) * cos(lat2Rad);
+
+    distance = 2 * earthRadius * asin(sqrt(hav));
+
+    return distance;
+
+  }
+  double degreesToRadians(double degrees) {
+    // Helper function to convert degrees to radians
+    return degrees * pi / 180;
+  }
+
+  double estimateTime(double distance){
+    double averageSpeed = 20;
+
+    return distance / averageSpeed * 60;
   }
 }

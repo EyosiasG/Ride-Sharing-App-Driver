@@ -3,8 +3,11 @@ import 'package:car_pool_driver/Views/tabPages/support_tab.dart';
 import 'package:car_pool_driver/global/global.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_rating_bar/flutter_rating_bar.dart';
+import 'package:intl/intl.dart';
 
 import '../../Models/trip.dart';
+import '../../widgets/progress_dialog.dart';
 
 class MyTrips extends StatefulWidget {
   const MyTrips({Key? key}) : super(key: key);
@@ -16,6 +19,7 @@ class MyTrips extends StatefulWidget {
 class _MyTripsState extends State<MyTrips> {
   final databaseReference = FirebaseDatabase.instance.ref('trips');
   List<Trip> trips = [];
+  List<Trip> scheduledTrips = [];
 
   Future<List<Trip>> getTrips() async {
     List<Trip> itemList = [];
@@ -41,11 +45,12 @@ class _MyTripsState extends State<MyTrips> {
             destinationLocation: value['destinationLocation'],
             pickUpLocation: value['pickUpLocation'],
             userIDs: [],
-            price: value['price'],
+            price: value['estimatedCost'],
             date: value['date'],
             time: value['time'],
             availableSeats: value['availableSeats'],
-            passengers: value['passengers']);
+            passengers: value['passengers'],
+            status: value['status']);
         itemList.add(item);
       });
     } catch (e) {
@@ -62,21 +67,36 @@ class _MyTripsState extends State<MyTrips> {
   }
 
   Future<void> getMyTrips() async {
+    Future.delayed(Duration.zero, () {
+      showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (BuildContext c){
+            return ProgressDialog(message: "Processing, Please wait...",);
+          }
+      );
+    });
     List<Trip> trips = await getTrips();
     setState(() {
       this.trips = trips;
+      for(var trip in trips){
+        if(trip.status == 'scheduled') {
+          scheduledTrips.add(trip);
+        }
+      }
     });
+    Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: ListView.builder(
-          itemCount: trips.length,
+          itemCount: scheduledTrips.length,
           itemBuilder: (context, index) {
             return InkWell(
               onTap: (){
-                Navigator.push(context, MaterialPageRoute(builder: (c)=> MyWidget()));
+                Navigator.push(context, MaterialPageRoute(builder: (c)=> MyWidget(trip: scheduledTrips[index],)));
               },
               child: Container(
                   margin: const EdgeInsets.all(10),
@@ -97,7 +117,7 @@ class _MyTripsState extends State<MyTrips> {
                             Container(
                               constraints: const BoxConstraints(maxWidth: 300),
                               child: Text(
-                                trips[index].destinationLocation,
+                                scheduledTrips[index].destinationLocation,
                                 style: const TextStyle(
                                   fontSize: 16,
                                   overflow: TextOverflow.ellipsis,
@@ -108,7 +128,7 @@ class _MyTripsState extends State<MyTrips> {
                             Container(
                               constraints: const BoxConstraints(maxWidth: 300),
                               child: Text(
-                                trips[index].pickUpLocation,
+                                scheduledTrips[index].pickUpLocation,
                                 style: const TextStyle(
                                   color: Colors.grey,
                                   overflow: TextOverflow.ellipsis,
@@ -124,12 +144,27 @@ class _MyTripsState extends State<MyTrips> {
                       alignment: Alignment.centerLeft,
                       child: Padding(
                         padding: const EdgeInsets.only(left: 15.0),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(trips[index].time),
-                            Text(trips[index].date),
+                            Column(
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(scheduledTrips[index].time),
+                                Text(DateFormat('EEEE, MMMM d, y').format(DateTime.parse(scheduledTrips[index].date))),
+                              ],
+                            ),
+                            RatingBarIndicator(
+                              itemBuilder: (context, index) =>
+                              const Icon(
+                                Icons.person,
+                                color: Colors.amber,
+                              ),
+                              rating: double.parse(scheduledTrips[index].passengers[0]) - double.parse(scheduledTrips[index].availableSeats),
+                              itemSize: 20,
+                              itemCount: int.parse(scheduledTrips[index].passengers[0]),
+                            ),
                           ],
                         ),
                       ),
